@@ -57,3 +57,43 @@ with st.form("new_entry"):
         df = pd.concat([df, new_row], ignore_index=True)
         df.to_csv("data.csv", index=False)
         st.success("✅ Entry added successfully. Refresh to see update.")
+
+# Divider
+st.markdown("---")
+st.header("📤 Export Week 6 Digest")
+
+if st.button("Generate Markdown Digest"):
+    digest = week6.copy()
+    digest["Amount"] = digest["Amount"].apply(lambda x: f"${x:,.2f}")
+    md_lines = ["### VaultSync Pro — Week 6 Digest\n"]
+    for day in digest["Date"].unique():
+        md_lines.append(f"#### {day}")
+        day_data = digest[digest["Date"] == day]
+        for _, row in day_data.iterrows():
+            md_lines.append(f"- **{row['Vendor']}**: {row['Amount']} — {row['Notes']} ({row['Tags']})")
+        md_lines.append("")  # spacing
+    st.code("\n".join(md_lines), language="markdown")
+
+# Divider
+st.markdown("---")
+st.header("📝 Correct an Entry")
+
+with st.form("correction_form"):
+    index = st.number_input("Row index to correct (check entry viewer)", min_value=0, max_value=len(df)-1, step=1)
+    field = st.selectbox("Field to correct", ["Date", "Vendor", "Amount", "Notes", "Tags", "Type"])
+    new_value = st.text_input("New value")
+    correct = st.form_submit_button("Apply Correction")
+
+    if correct:
+        df.at[index, field] = new_value if field != "Amount" else float(new_value)
+        df.to_csv("data.csv", index=False)
+        st.success(f"✅ Row {index} updated: {field} → {new_value}")
+
+# Divider
+st.markdown("---")
+st.header("🔄 Start Week 7")
+
+if st.button("Reset for Week 7"):
+    df["Tags"] = df["Tags"].apply(lambda t: t.replace("#Week6", "#Week7") if "#Week6" in t else t)
+    df.to_csv("data.csv", index=False)
+    st.success("✅ Tags updated to #Week7. Dashboard will reflect new entries.")
