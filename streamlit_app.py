@@ -4,8 +4,12 @@ import pandas as pd
 st.set_page_config(page_title="VaultSync Pro", layout="wide")
 st.title("📊 VaultSync Pro — Week 6 Dashboard")
 
-# Load data
-df = pd.read_csv("data.csv")
+# Load data safely
+try:
+    df = pd.read_csv("data.csv")
+except Exception:
+    st.error("⚠️ Could not load data.csv. Please confirm the file exists and is properly formatted.")
+    st.stop()
 
 # Filter by Week 6
 week6 = df[df["Tags"].str.contains("#Week6", na=False)]
@@ -19,14 +23,16 @@ for day in week6["Date"].unique():
     bills = day_data[day_data["Type"] == "Bill"]["Amount"].sum()
     buffer = income - bills
 
-    st.markdown(f"**📥 Income:** ${income:.2f}")
-    st.markdown(f"**📤 Bills:** ${bills:.2f}")
-    st.markdown(f"**💰 Buffer:** ${buffer:.2f}")
+    st.markdown(f"**📥 Income:** ${income:,.2f}")
+    st.markdown(f"**📤 Bills:** ${bills:,.2f}")
+    st.markdown(f"**💰 Buffer:** ${buffer:,.2f}")
 
     with st.expander("🔍 View Entries"):
-        st.dataframe(day_data[["Vendor", "Amount", "Notes", "Tags"]])
+        display = day_data.copy()
+        display["Amount"] = display["Amount"].apply(lambda x: f"${x:,.2f}")
+        st.dataframe(display[["Vendor", "Amount", "Notes", "Tags"]])
 
-# Add new entry
+# Divider
 st.markdown("---")
 st.header("➕ Add New Entry")
 
