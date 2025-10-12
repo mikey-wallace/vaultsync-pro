@@ -30,7 +30,8 @@ for day in week6["Date"].unique():
     with st.expander("🔍 View Entries"):
         display = day_data.copy()
         display["Amount"] = display["Amount"].apply(lambda x: f"${x:,.2f}")
-        st.dataframe(display[["Vendor", "Amount", "Notes", "Tags"]])
+        display["Index"] = display.index
+        st.dataframe(display[["Index", "Vendor", "Amount", "Notes", "Tags"]])
 
 # Divider
 st.markdown("---")
@@ -60,6 +61,38 @@ with st.form("new_entry"):
 
 # Divider
 st.markdown("---")
+st.header("📝 Edit an Entry")
+
+with st.form("edit_form"):
+    edit_index = st.number_input("Row index to edit", min_value=0, max_value=len(df)-1, step=1)
+    field = st.selectbox("Field to edit", ["Date", "Vendor", "Amount", "Notes", "Tags", "Type"])
+    new_value = st.text_input("New value")
+    edit = st.form_submit_button("Apply Edit")
+
+    if edit:
+        df.at[edit_index, field] = new_value if field != "Amount" else float(new_value)
+        df.to_csv("data.csv", index=False)
+        st.success(f"✅ Row {edit_index} updated: {field} → {new_value}")
+
+# Divider
+st.markdown("---")
+st.header("🧹 Remove an Entry")
+
+with st.form("remove_form"):
+    remove_index = st.number_input("Row index to remove", min_value=0, max_value=len(df)-1, step=1)
+    confirm = st.checkbox("I confirm I want to permanently remove this entry")
+    remove = st.form_submit_button("Remove Entry")
+
+    if remove and confirm:
+        removed_row = df.iloc[remove_index].to_dict()
+        df = df.drop(remove_index).reset_index(drop=True)
+        df.to_csv("data.csv", index=False)
+        st.success(f"✅ Removed entry: {removed_row['Vendor']} — ${removed_row['Amount']:,.2f}")
+    elif remove and not confirm:
+        st.warning("⚠️ Please confirm before removing an entry.")
+
+# Divider
+st.markdown("---")
 st.header("📤 Export Week 6 Digest")
 
 if st.button("Generate Markdown Digest"):
@@ -73,21 +106,6 @@ if st.button("Generate Markdown Digest"):
             md_lines.append(f"- **{row['Vendor']}**: {row['Amount']} — {row['Notes']} ({row['Tags']})")
         md_lines.append("")  # spacing
     st.code("\n".join(md_lines), language="markdown")
-
-# Divider
-st.markdown("---")
-st.header("📝 Correct an Entry")
-
-with st.form("correction_form"):
-    index = st.number_input("Row index to correct (check entry viewer)", min_value=0, max_value=len(df)-1, step=1)
-    field = st.selectbox("Field to correct", ["Date", "Vendor", "Amount", "Notes", "Tags", "Type"])
-    new_value = st.text_input("New value")
-    correct = st.form_submit_button("Apply Correction")
-
-    if correct:
-        df.at[index, field] = new_value if field != "Amount" else float(new_value)
-        df.to_csv("data.csv", index=False)
-        st.success(f"✅ Row {index} updated: {field} → {new_value}")
 
 # Divider
 st.markdown("---")
