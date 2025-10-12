@@ -4,9 +4,11 @@ import pandas as pd
 st.set_page_config(page_title="VaultSync Pro", layout="wide")
 st.title("📊 VaultSync Pro — Week 6 Dashboard")
 
-# Load data safely
+# Load and sanitize data
 try:
     df = pd.read_csv("data.csv")
+    for col in df.columns:
+        df[col] = df[col].astype(str).str.strip('"')
 except Exception:
     st.error("⚠️ Could not load data.csv. Please confirm the file exists and is properly formatted.")
     st.stop()
@@ -19,8 +21,8 @@ for day in week6["Date"].unique():
     st.subheader(f"📅 {day}")
     day_data = week6[week6["Date"] == day]
 
-    income = day_data[day_data["Type"] == "Income"]["Amount"].sum()
-    bills = day_data[day_data["Type"] == "Bill"]["Amount"].sum()
+    income = day_data[day_data["Type"] == "Income"]["Amount"].astype(float).sum()
+    bills = day_data[day_data["Type"] == "Bill"]["Amount"].astype(float).sum()
     buffer = income - bills
 
     st.markdown(f"**📥 Income:** ${income:,.2f}")
@@ -29,7 +31,7 @@ for day in week6["Date"].unique():
 
     with st.expander("🔍 View Entries"):
         display = day_data.copy()
-        display["Amount"] = display["Amount"].apply(lambda x: f"${x:,.2f}")
+        display["Amount"] = display["Amount"].astype(float).apply(lambda x: f"${x:,.2f}")
         display["Index"] = display.index
         st.dataframe(display[["Index", "Vendor", "Amount", "Notes", "Tags"]])
 
@@ -87,7 +89,7 @@ with st.form("remove_form"):
         removed_row = df.iloc[remove_index].to_dict()
         df = df.drop(remove_index).reset_index(drop=True)
         df.to_csv("data.csv", index=False)
-        st.success(f"✅ Removed entry: {removed_row['Vendor']} — ${removed_row['Amount']:,.2f}")
+        st.success(f"✅ Removed entry: {removed_row['Vendor']} — ${float(removed_row['Amount']):,.2f}")
     elif remove and not confirm:
         st.warning("⚠️ Please confirm before removing an entry.")
 
@@ -97,7 +99,7 @@ st.header("📤 Export Week 6 Digest")
 
 if st.button("Generate Markdown Digest"):
     digest = week6.copy()
-    digest["Amount"] = digest["Amount"].apply(lambda x: f"${x:,.2f}")
+    digest["Amount"] = digest["Amount"].astype(float).apply(lambda x: f"${x:,.2f}")
     md_lines = ["### VaultSync Pro — Week 6 Digest\n"]
     for day in digest["Date"].unique():
         md_lines.append(f"#### {day}")
